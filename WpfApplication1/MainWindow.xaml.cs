@@ -38,7 +38,14 @@ namespace PolloUpdater
         {
             StartButton.IsEnabled = false;
             DownloadProgressBar.IsIndeterminate = true;
-            await r.LoadData();
+            try
+            {
+                await r.LoadData();
+            }
+            catch (System.Exception ex)
+            {
+                MessageBox.Show(string.Format("Unhandled exception: {0}", ex.Message));
+            }
             DownloadProgressBar.IsIndeterminate = false;
             StartButton.IsEnabled = true;
         }
@@ -46,7 +53,15 @@ namespace PolloUpdater
         private async void StartButton_Click(object sender, RoutedEventArgs e)
         {
             StartButton.IsEnabled = false;
-            await r.Sync();
+            try
+            {
+                await r.Sync();
+            }
+            catch (System.Exception ex)
+            {
+                MessageBox.Show(string.Format("Unhandled exception: {0}", ex.Message));
+            }
+            
             StartButton.IsEnabled = true;
         }
 

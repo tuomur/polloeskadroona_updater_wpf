@@ -173,17 +173,47 @@ namespace PolloUpdater
                 ProgressDone = 0;
                 ProgressFile = "Checking existing files";
 
+                var directoriesToPrune = new List<string>();
+
                 var collectedFiles = new List<List<string>>();
                 foreach (var fileEntry in data.Files)
                 {
                     string filePath = fileEntry[0];
                     string repositoryHash = fileEntry[1];
 
+                    char[] sep = { '/' };
+                    bool asd = filePath.Contains(sep[0]);
+                    string dirName = filePath.Split(sep)[0];
+
+                    if (!directoriesToPrune.Contains(dirName)) directoriesToPrune.Add(dirName);
+
                     if (ShouldDownloadFile(filePath, repositoryHash))
                     {
                         collectedFiles.Add(fileEntry);
                     }
                 }
+
+                ProgressFile = "Pruning old files";
+                foreach (var pruneDir in directoriesToPrune)
+                {
+                    foreach (var item in Directory.EnumerateFiles(pruneDir, "*", SearchOption.AllDirectories))
+                    {
+                        string slashItem = item.Replace("\\", "/");
+                        bool itemBelongsToRepo = false;
+                        foreach (var repoItem in data.Files)
+                        {
+                            string repoItemPath = repoItem[0];
+                            if (repoItemPath == slashItem) itemBelongsToRepo = true;
+                        }
+                        if (!itemBelongsToRepo) 
+                        {
+                            ProgressFile = string.Format("Pruning {0}", item);
+                            File.Delete(item);
+                        } 
+                        
+                    }
+                }
+                
 
                 ProgressToDo = collectedFiles.Count;
 
@@ -192,7 +222,7 @@ namespace PolloUpdater
                     string filePath = fileEntry[0];
                     string repositoryHash = fileEntry[1];
 
-                    ProgressFile = filePath;
+                    ProgressFile = string.Format("Downloading {0}", filePath);
                     DownloadFile(filePath, repositoryHash);
                     ProgressDone++;
                 }
