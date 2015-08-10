@@ -196,6 +196,8 @@ namespace PolloUpdater
                 ProgressFile = "Pruning old files";
                 foreach (var pruneDir in directoriesToPrune)
                 {
+                    if (!Directory.Exists(pruneDir)) continue;
+
                     foreach (var item in Directory.EnumerateFiles(pruneDir, "*", SearchOption.AllDirectories))
                     {
                         string slashItem = item.Replace("\\", "/");
