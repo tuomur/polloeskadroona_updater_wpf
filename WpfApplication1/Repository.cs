@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using System.ComponentModel;
+using PropertyChanged;
 
 namespace PolloUpdater
 {
@@ -16,52 +17,17 @@ namespace PolloUpdater
         public List<List<string>> Files;
     }
 
-    public class Repository : INotifyPropertyChanged
+    [ImplementPropertyChanged]
+    public class Repository
     {
         RepositoryData data;
         public bool inProgress = false;
-        public int filesToDownload = 100;
-        public int filesDownloaded = 0;
-        public string currentlyDownloading = "";
         private string _url;
-        public event PropertyChangedEventHandler PropertyChanged;
 
-        public int ProgressToDo
-        { 
-            get {
-                return filesToDownload;
-            } 
-            set {
-                filesToDownload = value;
-                OnPropertyChanged("ProgressToDo");
-            }
-        }
-
-        public int ProgressDone
-        {
-            get
-            {
-                return filesDownloaded;
-            }
-            set
-            {
-                filesDownloaded = value;
-                OnPropertyChanged("ProgressDone");
-            }
-        }
-
-        public string ProgressFile
-        {
-            get
-            {
-                return currentlyDownloading;
-            }
-            set
-            {
-                currentlyDownloading = value;
-                OnPropertyChanged("ProgressFile");
-            }
-        }
+        public int ProgressToDo { get; set; }
+        public int ProgressDone { get; set; }
+        public string ProgressFile { get; set; }
+        public List<List<string>> IncomingChanges { get; set; }
 
         public Repository(string url)
         {
@@ -79,7 +45,9 @@ namespace PolloUpdater
                 string value = new StreamReader(rs).ReadToEnd();
                 rs.Close();
                 data = JsonConvert.DeserializeObject<RepositoryData>(value);
-                ProgressFile = "Ready to synchronize";
+
+                GetChangedFiles();
+                ProgressFile = string.Format("Pending {0} changes", IncomingChanges.Count);
             });
             return t;
         }
@@ -162,9 +130,63 @@ namespace PolloUpdater
             return hashOk;
         }
 
+        public void GetChangedFiles()
+        {
+            var collectedFiles = new List<List<string>>();
+            foreach (var fileEntry in data.Files)
+            {
+                string filePath = fileEntry[0];
+                string repositoryHash = fileEntry[1];
+
+                if (ShouldDownloadFile(filePath, repositoryHash))
+                {
+                    collectedFiles.Add(fileEntry);
+                }
+            }
+            IncomingChanges = collectedFiles;
+            ProgressToDo = IncomingChanges.Count;
+        }
+
+        void PruneOldFiles()
+        {
+            var directoriesToPrune = new List<string>();
+            foreach (var fileEntry in data.Files)
+            {
+                string filePath = fileEntry[0];
+
+                char[] sep = { '/' };
+                string dirName = filePath.Split(sep)[0];
+
+                if (!directoriesToPrune.Contains(dirName)) directoriesToPrune.Add(dirName);
+            }
+
+            ProgressFile = "Pruning old files";
+            foreach (var pruneDir in directoriesToPrune)
+            {
+                if (!Directory.Exists(pruneDir)) continue;
+
+                foreach (var item in Directory.EnumerateFiles(pruneDir, "*", SearchOption.AllDirectories))
+                {
+                    string slashItem = item.Replace("\\", "/");
+                    bool itemBelongsToRepo = false;
+                    foreach (var repoItem in data.Files)
+                    {
+                        string repoItemPath = repoItem[0];
+                        if (repoItemPath == slashItem) itemBelongsToRepo = true;
+                    }
+                    if (!itemBelongsToRepo)
+                    {
+                        ProgressFile = string.Format("Pruning {0}", item);
+                        File.Delete(item);
+                    }
+                }
+            }
+            ProgressFile = "";
+        }
+
         public Task Sync()
         {
-            Task t = Task.Run(() =>
+            return Task.Run(() =>
             {
                 if (inProgress) return;
 
@@ -172,54 +194,10 @@ namespace PolloUpdater
                 ProgressToDo = 100;
                 ProgressDone = 0;
                 ProgressFile = "Checking existing files";
+                if (IncomingChanges == null) GetChangedFiles();
+                ProgressToDo = IncomingChanges.Count;
 
-                var directoriesToPrune = new List<string>();
-
-                var collectedFiles = new List<List<string>>();
-                foreach (var fileEntry in data.Files)
-                {
-                    string filePath = fileEntry[0];
-                    string repositoryHash = fileEntry[1];
-
-                    char[] sep = { '/' };
-                    bool asd = filePath.Contains(sep[0]);
-                    string dirName = filePath.Split(sep)[0];
-
-                    if (!directoriesToPrune.Contains(dirName)) directoriesToPrune.Add(dirName);
-
-                    if (ShouldDownloadFile(filePath, repositoryHash))
-                    {
-                        collectedFiles.Add(fileEntry);
-                    }
-                }
-
-                ProgressFile = "Pruning old files";
-                foreach (var pruneDir in directoriesToPrune)
-                {
-                    if (!Directory.Exists(pruneDir)) continue;
-
-                    foreach (var item in Directory.EnumerateFiles(pruneDir, "*", SearchOption.AllDirectories))
-                    {
-                        string slashItem = item.Replace("\\", "/");
-                        bool itemBelongsToRepo = false;
-                        foreach (var repoItem in data.Files)
-                        {
-                            string repoItemPath = repoItem[0];
-                            if (repoItemPath == slashItem) itemBelongsToRepo = true;
-                        }
-                        if (!itemBelongsToRepo) 
-                        {
-                            ProgressFile = string.Format("Pruning {0}", item);
-                            File.Delete(item);
-                        } 
-                        
-                    }
-                }
-                
-
-                ProgressToDo = collectedFiles.Count;
-
-                foreach (var fileEntry in collectedFiles)
+                foreach (var fileEntry in IncomingChanges)
                 {
                     string filePath = fileEntry[0];
                     string repositoryHash = fileEntry[1];
@@ -228,19 +206,13 @@ namespace PolloUpdater
                     DownloadFile(filePath, repositoryHash);
                     ProgressDone++;
                 }
+
+                PruneOldFiles();
+
                 inProgress = false;
                 ProgressFile = string.Format("Synchronization Completed ({0} files changed)", ProgressToDo);
+                IncomingChanges = null;
             });
-            return t;
-        }
-
-        protected void OnPropertyChanged(string name)
-        {
-            PropertyChangedEventHandler handler = PropertyChanged;
-            if (handler != null)
-            {
-                handler(this, new PropertyChangedEventArgs(name));
-            }
         }
     }
 }
