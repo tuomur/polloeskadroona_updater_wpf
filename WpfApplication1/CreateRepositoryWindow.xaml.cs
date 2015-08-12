@@ -13,13 +13,14 @@ using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.IO;
 using Newtonsoft.Json;
+using MahApps.Metro.Controls;
 
 namespace PolloUpdater
 {
     /// <summary>
     /// Interaction logic for CreateRepositoryWindow.xaml
     /// </summary>
-    public partial class CreateRepositoryWindow : Window
+    public partial class CreateRepositoryWindow : MetroWindow
     {
         Repository r;
         public CreateRepositoryWindow()

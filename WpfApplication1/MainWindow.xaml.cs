@@ -14,13 +14,14 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.IO;
 using System.Security.Cryptography;
+using MahApps.Metro.Controls;
 
 namespace PolloUpdater
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow : MetroWindow
     {
         private Repository r;
         
@@ -47,7 +48,7 @@ namespace PolloUpdater
                 MessageBox.Show(string.Format("Unhandled exception: {0}", ex.Message));
             }
             DownloadProgressBar.IsIndeterminate = false;
-            StartButton.IsEnabled = true;
+            if (r.ProgressToDo > 0) StartButton.IsEnabled = true;
         }
 
         private async void StartButton_Click(object sender, RoutedEventArgs e)
