@@ -23,13 +23,13 @@ namespace PolloUpdater
     public partial class MainWindow : Window
     {
         private Repository r;
-        const string url = "https://koti.kapsi.fi/darkon/polloeskadroona/repo/updater.json";
+        
 
         public MainWindow()
         {
             InitializeComponent();
 
-            r = new Repository(url);
+            r = new Repository(Repository.DefaultUrl);
             DataContext = r;
             LoadRepositoryData();
         }
@@ -63,6 +63,12 @@ namespace PolloUpdater
             }
             
             StartButton.IsEnabled = true;
+        }
+
+        private void OpenCreateWindow_Click(object sender, RoutedEventArgs e)
+        {
+            var w = new CreateRepositoryWindow();
+            w.Show();
         }
 
     }

@@ -13,7 +13,9 @@ namespace PolloUpdater
 {
     public class RepositoryData
     {
+        [JsonProperty("DownloadRoot")]
         public string DownloadRoot;
+        [JsonProperty("Files")]
         public List<List<string>> Files;
     }
 
@@ -23,11 +25,16 @@ namespace PolloUpdater
         RepositoryData data;
         public bool inProgress = false;
         private string _url;
+        public const string DefaultUrlBase = "https://koti.kapsi.fi/darkon/polloeskadroona/repo/";
+        public const string DefaultUrl = DefaultUrlBase + "updater.json";
 
         public int ProgressToDo { get; set; }
         public int ProgressDone { get; set; }
         public string ProgressFile { get; set; }
         public List<List<string>> IncomingChanges { get; set; }
+
+        public int CreateRepoProgressToDo { get; set; }
+        public int CreateRepoProgressDone { get; set; }
 
         public Repository(string url)
         {
@@ -71,17 +78,21 @@ namespace PolloUpdater
             return listing.AsEnumerable();
         }
 
-        public List<List<string>> CreateRepositoryData(string basePath)
+        public List<List<string>> CreateRepositoryData(IEnumerable<string> paths)
         {
+            CreateRepoProgressToDo = 100;
+            CreateRepoProgressDone = 0;
             var files = new List<List<string>>();
-            foreach (var filePath in GetFilesFromDirectories(GetDirectoriesFromPath(basePath)))
+            var found = GetFilesFromDirectories(paths);
+            CreateRepoProgressToDo = found.Count();
+            foreach (var filePath in found)
             {
                 using (var sr = new StreamReader(filePath))
                 {
                     var hash = CalculateHash(sr.BaseStream);
-                    var trimmedPath = filePath.Remove(0, basePath.Length).TrimStart('\\');
-                    trimmedPath = trimmedPath.Replace("\\", "/");
+                    var trimmedPath = filePath.Replace("\\", "/");
                     files.Add(new List<string>() { trimmedPath, hash });
+                    CreateRepoProgressDone++;
                 }
             }
             return files;
