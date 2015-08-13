@@ -32,6 +32,7 @@ namespace PolloUpdater
         public int ProgressDone { get; set; }
         public string ProgressFile { get; set; }
         public List<List<string>> IncomingChanges { get; set; }
+        public List<string> PruneChanges { get; set; }
 
         public int CreateRepoProgressToDo { get; set; }
         public int CreateRepoProgressDone { get; set; }
@@ -54,7 +55,8 @@ namespace PolloUpdater
                 data = JsonConvert.DeserializeObject<RepositoryData>(value);
 
                 GetChangedFiles();
-                ProgressFile = string.Format("Pending {0} changes", IncomingChanges.Count);
+                GetFilesToPrune();
+                ProgressFile = string.Format("Pending {0} changes", IncomingChanges.Count + PruneChanges.Count);
             });
             return t;
         }
@@ -158,7 +160,7 @@ namespace PolloUpdater
             ProgressToDo = IncomingChanges.Count;
         }
 
-        void PruneOldFiles()
+        void GetFilesToPrune()
         {
             var directoriesToPrune = new List<string>();
             foreach (var fileEntry in data.Files)
@@ -171,7 +173,8 @@ namespace PolloUpdater
                 if (!directoriesToPrune.Contains(dirName)) directoriesToPrune.Add(dirName);
             }
 
-            ProgressFile = "Pruning old files";
+            var filesToPrune = new List<string>();
+
             foreach (var pruneDir in directoriesToPrune)
             {
                 if (!Directory.Exists(pruneDir)) continue;
@@ -187,10 +190,21 @@ namespace PolloUpdater
                     }
                     if (!itemBelongsToRepo)
                     {
-                        ProgressFile = string.Format("Pruning {0}", item);
-                        File.Delete(item);
+                        filesToPrune.Add(item);
                     }
                 }
+            }
+
+            PruneChanges = filesToPrune;
+        }
+
+        void PruneOldFiles()
+        {
+            ProgressFile = "Pruning old files";
+            foreach (var item in PruneChanges)
+            {
+                ProgressFile = string.Format("Pruning {0}", item);
+                File.Delete(item);
             }
             ProgressFile = "";
         }
@@ -206,7 +220,8 @@ namespace PolloUpdater
                 ProgressDone = 0;
                 ProgressFile = "Checking existing files";
                 if (IncomingChanges == null) GetChangedFiles();
-                ProgressToDo = IncomingChanges.Count;
+                if (PruneChanges == null) GetFilesToPrune();
+                ProgressToDo = IncomingChanges.Count + PruneChanges.Count;
 
                 foreach (var fileEntry in IncomingChanges)
                 {
@@ -223,6 +238,7 @@ namespace PolloUpdater
                 inProgress = false;
                 ProgressFile = string.Format("Synchronization Completed ({0} files changed)", ProgressToDo);
                 IncomingChanges = null;
+                PruneChanges = null;
             });
         }
     }

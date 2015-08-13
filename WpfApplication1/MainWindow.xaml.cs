@@ -48,7 +48,7 @@ namespace PolloUpdater
                 MessageBox.Show(string.Format("Unhandled exception: {0}", ex.Message));
             }
             DownloadProgressBar.IsIndeterminate = false;
-            if (r.ProgressToDo > 0) StartButton.IsEnabled = true;
+            StartButton.IsEnabled = true;
         }
 
         private async void StartButton_Click(object sender, RoutedEventArgs e)
