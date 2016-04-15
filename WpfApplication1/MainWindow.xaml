@@ -12,10 +12,17 @@
         </Controls:WindowCommands>
     </Controls:MetroWindow.RightWindowCommands>
     <StackPanel Orientation="Vertical">
+        <StackPanel.LayoutTransform>
+            <ScaleTransform x:Name="ApplicationScaleTransform"
+                        CenterX="0"
+                        CenterY="0"
+                        ScaleX="1.1"
+                        ScaleY="1.1" />
+        </StackPanel.LayoutTransform>
         <TextBlock x:Name="DownloadStatus" Margin="10,10,10,0" TextWrapping="Wrap" Text="{Binding ProgressFile}" VerticalAlignment="Top"/>
-        <ProgressBar Name="DownloadProgressBar" Margin="10,10,10,20" VerticalAlignment="Top" Maximum="{Binding ProgressToDo}" Value="{Binding ProgressDone}" Height="10"/>
+        <ProgressBar Name="DownloadProgressBar" Margin="10,10,10,20" VerticalAlignment="Top" Maximum="{Binding ProgressToDo}" Value="{Binding ProgressDone}" Height="20"/>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-        <Button Name="StartButton" Content="Sync" HorizontalAlignment="Right" Margin="0,10,10,10" VerticalAlignment="Top" Height="30" Width="70" Click="StartButton_Click"/>
+        <Button Name="StartButton" Content="Sync" HorizontalAlignment="Right" Margin="0,0,10,10" VerticalAlignment="Top" Height="30" Width="70" Click="StartButton_Click"/>
         </StackPanel>
     </StackPanel>
 </Controls:MetroWindow>

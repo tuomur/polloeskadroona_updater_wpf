@@ -7,6 +7,13 @@
         TitleCaps="False"
         Title="Create Repository Metadata" Height="260" Width="552" SizeToContent="Height" WindowStartupLocation="CenterScreen" ResizeMode="NoResize">
     <StackPanel>
+        <StackPanel.LayoutTransform>
+            <ScaleTransform x:Name="ApplicationScaleTransform"
+                        CenterX="0"
+                        CenterY="0"
+                        ScaleX="1.1"
+                        ScaleY="1.1" />
+        </StackPanel.LayoutTransform>
         <ListBox Name="ListOfFolders" Height="151" Margin="10"/>
         <StackPanel Height="30" Orientation="Horizontal" Margin="10,0,10,10" HorizontalAlignment="Right">
             <ProgressBar Name="RepoProgress" Height="10" Width="442" Margin="0,0,10,0" Value="{Binding CreateRepoProgressDone}" Maximum="{Binding CreateRepoProgressToDo}" />
